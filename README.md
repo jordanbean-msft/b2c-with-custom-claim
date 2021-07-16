@@ -18,6 +18,8 @@ We need to create a [custom B2C user policy](https://docs.microsoft.com/en-us/az
 
 We also want to scan all incoming traffic to the backend applications for potential attacks, so we can direct traffic through an [Azure Application Gateway](https://docs.microsoft.com/en-us/azure/application-gateway/overview) with [Web Application Firewall (WAF)](https://docs.microsoft.com/en-us/azure/web-application-firewall/).
 
+[Azure Application Insights](https://docs.microsoft.com/en-us/azure/azure-monitor/app/app-insights-overview) can be linked up to your policies to track usage & debug errors in the user journey.
+
 Additionally, we can **back-populate** all existing users from the original identity provider using the [Microsoft Graph API](https://docs.microsoft.com/en-us/graph/) & our B2C tenant.
 
 Finally, the demo web app will display the all the ID token (using [hybrid flow](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc)) claims as key/value pairs in a table to show the fact that the custom claims comes through. The application can then use this claim to make authorization decisions on a per-user basis.
@@ -33,15 +35,124 @@ The repo is divided into 2 sections.
 
 ## Azure AD B2C tenant setup
 
+### Create the Application Insights resource
+
+You will use Azure Application Insights to track usage & debug errors in the user journeys. You will need to copy the **InstrumentationKey** Guid from the **Overview** blade after deployment so you can add it to the custom B2C policies.
+
+### Create Azure Function resource and add code to generate custom claim for each user
+
+Create an Azure Function (Consumption Serverless SKU) to generate the custom claim for new user sign-up.
+
+In this example, I will use a PowerShell function.
+
+Create a new function in the **Functions** blade.
+
+1. Create a new function called **GenerateTalisenID**.
+1. Make it an HTTP triggered function
+1. In the **Code + Test** blade of that newly created function, add the following code. Notice that the "result" is a JSON object with the exact same name of the custom claim we want added to the user profile.
+
+```powershell
+using namespace System.Net
+
+# Input bindings are passed in via param block.
+param($Request, $TriggerMetadata)
+
+# Write to the Azure Functions log stream.
+Write-Host "PowerShell HTTP trigger function processed a request."
+
+$result = @{
+    extension_TalisenID = (New-Guid).Guid
+}
+
+$body = $result | ConvertTo-Json
+
+# Associate values to output bindings by calling 'Push-OutputBinding'.
+Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    StatusCode = [HttpStatusCode]::OK
+    Body = $body
+})
+```
+
 ### Create Azure AD B2C tenant
 
 ### Create custom user attribute
 
-### Create application registrations to support sign up/sign in, demo web app & back-population script
+### Create application registrations to demo web app & back-population script
 
-### Modify custom B2C policy before upload
+### Create the custom policies
 
-### Upload custom B2C policy
+You can mostly follow the instructions in the link below to set up the policy & its associated app registrations.
+
+https://docs.microsoft.com/en-us/azure/active-directory-b2c/tutorial-create-user-flows?pivots=b2c-custom-policy
+
+#### Replace custom extension with your custom extension name
+
+You will need to find & replace all references to the demo extension name in all files. It is initially defined in the `TrustFrameworkPolicy->BuildingBlocks->ClaimsSchema->ClaimsType` in the **TrustFrameworkBase.xml** file.
+
+```xml
+<ClaimType Id="extension_TalisenID">
+	<DisplayName>TalisenID</DisplayName>
+	<DataType>string</DataType>
+</ClaimType>
+```
+
+It is referenced in all other files.
+
+#### Replace REST API call to Azure Function
+
+You will need to provide the ServiceUrl & authentication scheme for your B2C policy to call out to the Azure Function to generate the custom claim on new user sign-up. For simplicity, in this example, an API key is used. For a production environment, you should set up a [ClientCertificate](https://docs.microsoft.com/en-us/azure/active-directory-b2c/secure-rest-api?tabs=windows&pivots=b2c-custom-policy#https-client-certificate-authentication) for authentication.
+
+```xml
+<ClaimsProvider>
+	<DisplayName>REST APIs</DisplayName>
+	<TechnicalProfiles>
+		<TechnicalProfile Id="REST-API-SignUp">
+			<DisplayName>Generate new TalisenID for user signup</DisplayName>
+			<Protocol Name="Proprietary" Handler="Web.TPEngine.Providers.RestfulProvider, Web.TPEngine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+			<Metadata>
+				<!-- Set the ServiceUrl with your own REST API endpoint -->
+				<Item Key="ServiceUrl">https://func-generate-talisen-id-ussc-demo.azurewebsites.net/api/GenerateTalisenId?code=x8Fdj2CjFakekeypualqnCmo1B4FakekeykaBH6miXbRmw==</Item>
+				<Item Key="SendClaimsIn">Body</Item>
+				<!-- Set AuthenticationType to Basic or ClientCertificate in production environments -->
+				<Item Key="AuthenticationType">None</Item>
+				<!-- REMOVE the following line in production environments -->
+				<Item Key="AllowInsecureAuthInProduction">true</Item>
+			</Metadata>
+			<InputClaims>
+				<!-- Claims sent to your REST API -->
+				<InputClaim ClaimTypeReferenceId="objectId" />
+			</InputClaims>
+			<OutputClaims>
+				<!-- Claims parsed from your REST API -->
+				<OutputClaim ClaimTypeReferenceId="extension_TalisenID" />
+			</OutputClaims>
+			<UseTechnicalProfileForSessionManagement ReferenceId="SM-Noop" />
+		</TechnicalProfile>
+	</TechnicalProfiles>
+</ClaimsProvider>
+```
+
+#### Replace App Insights Instrumentation key
+
+You will need to update all the custom policies with the App Insights Instrumentation Key. You can find them near the top of the various policy files.
+
+```xml
+<UserJourneyBehaviors>
+	<JourneyInsights TelemetryEngine="ApplicationInsights" InstrumentationKey="b96c2dc3-1234-43cb-5678-d0fc1f7fecbf" DeveloperMode="true" ClientEnabled="true" ServerEnabled="true" TelemetryVersion="1.0.0" />
+</UserJourneyBehaviors>
+```
+
+### Upload custom policies
+
+**You must upload the policies in the order specified**.
+
+1. TrustFrameworkBase.xml
+1. TrustFrameworkExtensions.xml
+1. SignUpOrSignin.xml
+1. ProfileEdit.xml
+1. PasswordReset.xml
+
+The names of the policies will be added to the Web.config file in the demo app.
 
 ## Backpopulate existing users
 
@@ -91,6 +202,7 @@ You will need to modify the following values in the `DemoWebAppB2CWithCustomClai
 - https://docs.microsoft.com/en-us/azure/active-directory-b2c/
 - https://docs.microsoft.com/en-us/azure/active-directory-b2c/custom-policy-overview
 - https://docs.microsoft.com/en-us/azure/azure-functions/
+- https://docs.microsoft.com/en-us/azure/azure-monitor/app/app-insights-overview
 - https://docs.microsoft.com/en-us/azure/application-gateway/overview
 - https://docs.microsoft.com/en-us/azure/web-application-firewall/
 - https://docs.microsoft.com/en-us/graph/
