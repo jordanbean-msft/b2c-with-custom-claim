@@ -251,6 +251,25 @@ You will need to modify the following values in the `DemoWebAppB2CWithCustomClai
 - **ida:PostLogoutRedirectUri** - This is where users will be redirected to after signout.
 - **ida:RedirectUri** - This is where users will be reidrected to after signin.
 
+## Custom policy changes
+
+The most important part of this demo is understanding how to modify the B2C policies to generate a new custom claim on sign up, store it in the user's profile & retrieve it on signin.
+
+You will notice in several of the techincal profiles for the various ways sign-in & signup work you will see either Input or Output claims that reference your custom claim.
+
+```xml
+<OutputClaim ClaimTypeReferenceId="extension_TalisenID" />
+```
+
+You will also note in several of the **signup** related Techincal Profiles a reference to our REST API call to generate an ID before writing it to the directory
+
+```xml
+<ValidationTechnicalProfiles>
+	<ValidationTechnicalProfile ReferenceId="REST-API-SignUp" />
+	<ValidationTechnicalProfile ReferenceId="AAD-UserWriteUsingLogonEmail" />
+</ValidationTechnicalProfiles>
+```
+
 ## References
 
 - https://docs.microsoft.com/en-us/azure/active-directory-b2c/
