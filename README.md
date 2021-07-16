@@ -225,6 +225,30 @@ For convienence, this repo includes a sample Postman collection. Import into Pos
 - **Get Custom Extension for a User** - This will retrive the **userprincipalname**, **givenName**, **surname** & **custom extension** property for a specified user. You will need to customize this with **your custom extension property** and the **displayName** of the user you are querying for.
 - **Create User** - This will programatically create a new user in your B2C tenant. You will need to customize this as appropriate. You will also need to update the **custom extension property** name with the one generated for your application. You can customize the password & password properties as appropriate.
 
+```json
+{
+  "accountEnabled": true,
+  "displayName": "Dwight Schrute",
+  "mailNickname": "Dwight",
+  "userPrincipalName": "dwight.k.schrute@b2ctenantusscdemo.onmicrosoft.com",
+  "givenName": "Dwight",
+  "surname": "Schrute",
+  "extension_d1fff5e5eefa401e81062254ff0120b7_TalisenID": "123456",
+  "passwordProfile" : {
+    "forceChangePasswordNextSignIn": false,
+    "password": "{{TEMP_PASSWORD}}"
+  },
+  "passwordPolicies": "DisablePasswordExpiration",
+  "identities": [
+      {
+          "signInType": "emailAddress",
+          "issuer": "b2ctenantusscdemo.onmicrosoft.com",
+          "issuerAssignedId": "dwight.k.schrute@dunder-mifflin.com"
+      }
+  ]
+}
+```
+
 ## Demo web app configuration
 
 ### Modify web.config with B2C tenant values
@@ -250,6 +274,10 @@ You will need to modify the following values in the `DemoWebAppB2CWithCustomClai
 - **ida:Domain** - This is the **domain name** of your B2C tenant. It can be found in the **Overview** blade of your B2C tenant.
 - **ida:PostLogoutRedirectUri** - This is where users will be redirected to after signout.
 - **ida:RedirectUri** - This is where users will be reidrected to after signin.
+
+Build and run the web application. Go through signing up as a new user & signing in as a user that you backpopulated.
+
+![signIn](./signin.png)
 
 ## Custom policy changes
 
