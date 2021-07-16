@@ -24,6 +24,8 @@ Additionally, we can **back-populate** all existing users from the original iden
 
 Finally, the demo web app will display the all the ID token (using [hybrid flow](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc)) claims as key/value pairs in a table to show the fact that the custom claims comes through. The application can then use this claim to make authorization decisions on a per-user basis.
 
+![webApp](./webApp.png)
+
 ## Structure
 
 The repo is divided into 2 sections.
@@ -33,7 +35,7 @@ The repo is divided into 2 sections.
 
 ## Deployment process
 
-## Azure AD B2C tenant setup
+## Azure setup
 
 ### Create the Application Insights resource
 
@@ -79,6 +81,34 @@ Create an Azure AD B2C tenant in your subscription & resource group. Once create
 
 ### Create application registrations to demo web app & back-population script
 
+You will need to create 2 app registrations.
+
+1. DemoWebApp - this is the identity for your Demo Web Application
+1. Postman - this is the identity you can use for back-populating the B2C tenant with existing users
+
+#### DemoWebApp
+
+1. Create an app registration called "DemoWebApp"
+1. Set the **Redirect URI** to "https://localhost:44374" so you can run the demo. You can also add "https://jwt.ms" after creation so you can have it send tokens to be decoded to debug if necessary. In a production environment, this would be the URL of your application.
+1. Accept both the **openid** and **offline_access** scopes on the Microsoft Graph API
+1. Set the **Supported account types** to "Accounts in any identity provider or organizational directory (for authenticating users with user flows)"
+1. Check the **Implicit grant & hybrid flows** boxes for **Access tokens** and **ID tokens** so you can run the demo (customize this as needed in production).
+
+#### Postman
+
+1. Create an app registration called "Postman"
+1. Set the **Redirect URI** to "https://www.getpostman.com/oauth2/callback"
+1. Set the **Supported account types** to "Accounts in this organization directory only (b2ctenantusscdmo only - Single tenant)
+1. Generate a **client secret** for Postman to use to authenticate using client credentials grant parameters
+1. Grant this app registration **Directory.ReadWrite.All**
+	1. Click on **API permissions**
+	1. Click on **Add a permission**
+	1. Click on **Microsoft APIs**
+	1. Click on **Microsoft Graph**
+	1. Click on **Application permissions**
+	1. Click the checkbox next to **Directory.ReadWrite.All**
+	1. Click on **Grant admin consent for b2ctenantusscdemo** to allow this identity to have the requested permissions.
+
 ### Create custom user attribute
 
 1. Click on the **User attributes** blade in your B2C tenant.
@@ -103,9 +133,11 @@ extension_d1fff5e5-1234-401e-5678-2254ff0120b7
 
 ### Create the custom policies
 
-You can mostly follow the instructions in the link below to set up the policy & its associated app registrations.
+You can mostly follow the instructions in the link below to set up the policy & it's associated app registrations, policy keys, etc.
 
 https://docs.microsoft.com/en-us/azure/active-directory-b2c/tutorial-create-user-flows?pivots=b2c-custom-policy
+
+See below for the additional changes you will need to make.
 
 #### Replace custom extension with your custom extension name
 
@@ -180,7 +212,7 @@ The names of the policies will be added to the Web.config file in the demo app.
 
 You can use the Microsoft Graph API to back-populate all existing users. You can set the value of the **custom claim** on each user so they get the same unique identifier they had in the previous identity system.
 
-In order to do this, you must use a service principal that has at least **User.ReadWrite.All** so you can create the user profiles programatically.
+In order to do this, you must use a service principal that has **Directory.ReadWrite.All** so you can create the user profiles programatically & query the directory for any other information.
 
 Since we are running this back-population programatically, we can use [client credential grant](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow) to allow our script or Postman to create the users.
 
