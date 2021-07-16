@@ -19,12 +19,12 @@ namespace DemoWebAppB2CWithCustomClaim
     {
         private static string clientId = ConfigurationManager.AppSettings["ida:ClientId"];
         private static string aadInstance = EnsureTrailingSlash(ConfigurationManager.AppSettings["ida:AADInstance"]);
-        private static string tenantId = ConfigurationManager.AppSettings["ida:TenantId"];
         private static string postLogoutRedirectUri = ConfigurationManager.AppSettings["ida:PostLogoutRedirectUri"];
+        private static string redirectUri = ConfigurationManager.AppSettings["ida:PostLogoutRedirectUri"];
+        private static string domain = ConfigurationManager.AppSettings["ida:Domain"];
         public static string SignUpPolicyId = ConfigurationManager.AppSettings["ida:SignUpSignInPolicyId"];
         public static string SignInPolicyId = ConfigurationManager.AppSettings["ida:SignUpSignInPolicyId"];
         public static string ProfilePolicyId  = ConfigurationManager.AppSettings["ida:EditProfilePolicyId"];
-        private static string authority = aadInstance + tenantId;
 
         public void ConfigureAuth(IAppBuilder app) {
             Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
@@ -72,17 +72,12 @@ namespace DemoWebAppB2CWithCustomClaim
             return new OpenIdConnectAuthenticationOptions {
                 // For each policy, give OWIN the policy-specific metadata address, and
                 // set the authentication type to the id of the policy
-                //MetadataAddress = String.Format(aadInstance, tenantId, policy),
-                MetadataAddress = String.Format(aadInstance, policy),
+                MetadataAddress = String.Format(aadInstance, domain, policy),
                 AuthenticationType = policy,
 
-                //ProtocolValidator = new OpenIdConnectProtocolValidator {
-                //    RequireNonce = false,
-                //    RequireState = false
-                //},
                 // These are standard OpenID Connect parameters, with values pulled from web.config
                 ClientId = clientId,
-                RedirectUri = postLogoutRedirectUri,
+                RedirectUri = redirectUri,
                 PostLogoutRedirectUri = postLogoutRedirectUri,
                 Notifications = new OpenIdConnectAuthenticationNotifications {
                     AuthenticationFailed = AuthenticationFailed
@@ -93,10 +88,8 @@ namespace DemoWebAppB2CWithCustomClaim
                 // This piece is optional - it is used for displaying the user's name in the navigation bar.
                 TokenValidationParameters = new TokenValidationParameters {
                     NameClaimType = "name",
-                    SaveSigninToken = true //important to save the token in boostrapcontext
-                }
-
-                
+                    SaveSigninToken = true
+                }                
             };
         }
     }
