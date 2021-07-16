@@ -79,6 +79,8 @@ Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
 
 Create an Azure AD B2C tenant in your subscription & resource group. Once created, click on the **Overview->Azure AD B2C Settings...** button.
 
+https://docs.microsoft.com/en-us/azure/active-directory-b2c/tutorial-create-tenant
+
 ### Create application registrations to demo web app & back-population script
 
 You will need to create 2 app registrations.
@@ -283,6 +285,15 @@ Build and run the web application. Go through signing up as a new user & signing
 
 The most important part of this demo is understanding how to modify the B2C policies to generate a new custom claim on sign up, store it in the user's profile & retrieve it on signin.
 
+The new extension property is added to ClaimsSchema for this user journey.
+
+```xml
+<ClaimType Id="extension_TalisenID">
+	<DisplayName>TalisenID</DisplayName>
+	<DataType>string</DataType>
+</ClaimType>
+```
+
 You will notice in several of the techincal profiles for the various ways sign-in & signup work you will see either Input or Output claims that reference your custom claim.
 
 ```xml
@@ -298,6 +309,42 @@ You will also note in several of the **signup** related Techincal Profiles a ref
 </ValidationTechnicalProfiles>
 ```
 
+The custom claim will get persisted to the B2C tenant user profile.
+
+```xml
+<TechnicalProfile Id="AAD-UserWriteProfileUsingObjectId">
+	<Metadata>
+		<Item Key="Operation">Write</Item>
+		<Item Key="RaiseErrorIfClaimsPrincipalAlreadyExists">false</Item>
+		<Item Key="RaiseErrorIfClaimsPrincipalDoesNotExist">true</Item>            
+		<!--Insert b2c-extensions-app application ID here, for example: 11111111-1111-1111-1111-111111111111-->  
+		<Item Key="ClientId">d1fff5e5-eefa-401e-8106-2254ff0120b7</Item>
+		<!--Insert b2c-extensions-app application ObjectId here, for example: 22222222-2222-2222-2222-222222222222-->
+		<Item Key="ApplicationObjectId">0aac6457-d26b-4836-8668-c365db32ce0d</Item>
+	</Metadata>
+	<IncludeInSso>false</IncludeInSso>
+	<InputClaims>
+		<InputClaim ClaimTypeReferenceId="objectId" Required="true" />
+	</InputClaims>
+	<PersistedClaims>
+		<!-- Required claims -->
+		<PersistedClaim ClaimTypeReferenceId="objectId" />
+
+		<!-- Optional claims -->
+		<PersistedClaim ClaimTypeReferenceId="givenName" />
+		<PersistedClaim ClaimTypeReferenceId="surname" />
+		<PersistedClaim ClaimTypeReferenceId="extension_TalisenID" />
+	</PersistedClaims>
+	<IncludeTechnicalProfile ReferenceId="AAD-Common" />
+</TechnicalProfile>
+```
+
+## Debugging
+
+You can use the integration with App Insights to debug any issues with the flow.
+
+https://docs.microsoft.com/en-us/azure/active-directory-b2c/troubleshoot-with-application-insights
+
 ## References
 
 - https://docs.microsoft.com/en-us/azure/active-directory-b2c/
@@ -309,3 +356,5 @@ You will also note in several of the **signup** related Techincal Profiles a ref
 - https://docs.microsoft.com/en-us/graph/
 - https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc
 - https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow
+- https://docs.microsoft.com/en-us/azure/active-directory-b2c/tutorial-create-tenant
+- https://docs.microsoft.com/en-us/azure/active-directory-b2c/add-sign-up-and-sign-in-policy?pivots=b2c-custom-policy
