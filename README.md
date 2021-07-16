@@ -20,6 +20,8 @@ We also want to scan all incoming traffic to the backend applications for potent
 
 Additionally, we can **back-populate** all existing users from the original identity provider using the [Microsoft Graph API](https://docs.microsoft.com/en-us/graph/) & our B2C tenant.
 
+Finally, the demo web app will display the all the ID token (using [hybrid flow](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc)) claims as key/value pairs in a table to show the fact that the custom claims comes through. The application can then use this claim to make authorization decisions on a per-user basis.
+
 ## Structure
 
 The repo is divided into 2 sections.
@@ -43,7 +45,24 @@ The repo is divided into 2 sections.
 
 ## Backpopulate existing users
 
+You can use the Microsoft Graph API to back-populate all existing users. You can set the value of the **custom claim** on each user so they get the same unique identifier they had in the previous identity system.
+
+In order to do this, you must use a service principal that has at least **User.ReadWrite.All** so you can create the user profiles programatically.
+
+### Import B2C.postman_collection.json into Postman
+
+For convienence, this repo includes a sample Postman collection. Import into Postman (File->Import).
+
+- **Get B2C token** - This uses client credentials grant to retrieve an access token to the Microsoft Graph API. You will need to customize this command with your own **client_id** and **client_secret** for your B2C tenant. To make it easier to run the subsequent calls, it will use the Postman **Tests** tab to programatically store the **access token** in a Postman variable called **AUTH_TOKEN** so it can easily be referenced by the other calls.
+- **Get All Extension Properties** - This will retreive the name of all the extension properties you have created on your B2C tenant. You will need the **full name** of the extension property to query it in the next calls.
+- **Get Custom Extension for a User** - This will retrive the **userprincipalname**, **givenName**, **surname** & **custom extension** property for a specified user. You will need to customize this with **your custom extension property** and the **displayName** of the user you are querying for.
+- **Create User** - This will programatically create a new user in your B2C tenant. You will need to customize this as appropriate. You will also need to update the **custom extension property** name with the one generated for your application. You can customize the password & password properties as appropriate.
+
 ### Get an access token to the Graph API using Postman
+
+Since we are running this back-population programatically, we can use [client credential grant](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow) to allow our script or Postman to create the users.
+
+
 
 ### Create an existing user using Postman
 
@@ -66,9 +85,9 @@ You will need to modify the following values in the `DemoWebAppB2CWithCustomClai
 
 - **ida:ClientId** - This is the **application ID** of your demo web app application registration. This can be found in the **Overview** blade for the demo web app app registration in your B2C tenant.
 - **ida:AADInstance** - This is the **Azure AD B2C OpenID Connect metadata document** endpoint. It can be found in the **App Registrations** blade in your B2C tenant. Notice that it has placeholders ({0}, {1}). These will be substituted into during the setup of the middleware, one for each custom policy. Therefore, you should only need to modify the first part of the URL with the name of your B2C tenant.
-- **ida:SignUpSignInPolicyId** - This is the name of your custom B2C policy for signing in users.
-- **ida:EditProfilePolicyId** - This is the name of your custom B2C policy for modifying users profiles.
-- **ida:ResetPasswordPolicyId** - This is the name of your custom B2C policy for resetting user's passwords.
+- **ida:SignUpSignInPolicyId** - This is the name of your custom B2C policy for signing in users. This can be found in the **Custom Policies** blade of the **Identity Experience Framwork** blade for your B2C tenant.
+- **ida:EditProfilePolicyId** - This is the name of your custom B2C policy for modifying users profiles. This can be found in the **Custom Policies** blade of the **Identity Experience Framwork** blade for your B2C tenant.
+- **ida:ResetPasswordPolicyId** - This is the name of your custom B2C policy for resetting user's passwords. This can be found in the **Custom Policies** blade of the **Identity Experience Framwork** blade for your B2C tenant.
 - **ida:Domain** - This is the **domain name** of your B2C tenant. It can be found in the **Overview** blade of your B2C tenant.
 - **ida:PostLogoutRedirectUri** - This is where users will be redirected to after signout.
 - **ida:RedirectUri** - This is where users will be reidrected to after signin.
@@ -81,3 +100,4 @@ You will need to modify the following values in the `DemoWebAppB2CWithCustomClai
 - https://docs.microsoft.com/en-us/azure/application-gateway/overview
 - https://docs.microsoft.com/en-us/azure/web-application-firewall/
 - https://docs.microsoft.com/en-us/graph/
+- https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc
