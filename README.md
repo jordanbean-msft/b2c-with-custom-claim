@@ -49,6 +49,8 @@ You can use the Microsoft Graph API to back-populate all existing users. You can
 
 In order to do this, you must use a service principal that has at least **User.ReadWrite.All** so you can create the user profiles programatically.
 
+Since we are running this back-population programatically, we can use [client credential grant](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow) to allow our script or Postman to create the users.
+
 ### Import B2C.postman_collection.json into Postman
 
 For convienence, this repo includes a sample Postman collection. Import into Postman (File->Import).
@@ -57,14 +59,6 @@ For convienence, this repo includes a sample Postman collection. Import into Pos
 - **Get All Extension Properties** - This will retreive the name of all the extension properties you have created on your B2C tenant. You will need the **full name** of the extension property to query it in the next calls.
 - **Get Custom Extension for a User** - This will retrive the **userprincipalname**, **givenName**, **surname** & **custom extension** property for a specified user. You will need to customize this with **your custom extension property** and the **displayName** of the user you are querying for.
 - **Create User** - This will programatically create a new user in your B2C tenant. You will need to customize this as appropriate. You will also need to update the **custom extension property** name with the one generated for your application. You can customize the password & password properties as appropriate.
-
-### Get an access token to the Graph API using Postman
-
-Since we are running this back-population programatically, we can use [client credential grant](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow) to allow our script or Postman to create the users.
-
-
-
-### Create an existing user using Postman
 
 ## Demo web app configuration
 
@@ -101,3 +95,4 @@ You will need to modify the following values in the `DemoWebAppB2CWithCustomClai
 - https://docs.microsoft.com/en-us/azure/web-application-firewall/
 - https://docs.microsoft.com/en-us/graph/
 - https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc
+- https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow
